@@ -2,7 +2,7 @@ import os
 
 import requests
 
-API_BASE_URL = os.getenv("API_BASE_URL", "https://api.restcountries.com/v1")
+API_BASE_URL = os.getenv("API_BASE_URL", "https://api.restcountries.com/v5")
 API_KEY = os.getenv("API_KEY")
 
 
