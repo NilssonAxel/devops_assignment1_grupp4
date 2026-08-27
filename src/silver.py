@@ -6,9 +6,13 @@ def clean_country(raw):
         "population": raw.get("population", 0),
         "region": raw.get("region", "Unknown"),
         "continents": raw.get("continents", []),
-        "currencies": [c.get("code") for c in raw.get("currencies", []) if c.get("code")],
+        "currencies": [
+            c.get("code") for c in raw.get("currencies", []) if c.get("code")
+        ],
     }
- 
- 
+
+
 def transform_all(raw_list):
-    return [clean_country(item) for item in raw_list if item.get("names", {}).get("common")]
+    return [
+        clean_country(item) for item in raw_list if item.get("names", {}).get("common")
+    ]
