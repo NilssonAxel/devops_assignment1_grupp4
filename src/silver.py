@@ -5,6 +5,8 @@ def clean_country(raw):
         "capital": (raw.get("capitals") or [{}])[0].get("name"),
         "population": raw.get("population", 0),
         "region": raw.get("region", "Unknown"),
+        "continents": raw.get("continents", []),
+        "currencies": [c.get("code") for c in raw.get("currencies", []) if c.get("code")],
     }
  
  
