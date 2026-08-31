@@ -1,6 +1,9 @@
 import os
 
 import requests
+from dotenv import load_dotenv
+
+load_dotenv()
 
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.restcountries.com/countries/v5")
 API_KEY = os.getenv("API_KEY")
