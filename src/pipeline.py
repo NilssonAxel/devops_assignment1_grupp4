@@ -1,5 +1,3 @@
-import json
-
 from src.bronze import land_raw
 from src.gold import summarize
 from src.silver import transform_all
@@ -15,4 +13,5 @@ def run_pipeline():
 
 
 if __name__ == "__main__":
-    print(json.dumps(run_pipeline(), ensure_ascii=False, indent=2))
+    output_path = run_pipeline()
+    print(f"Gold data written to: {output_path}")
