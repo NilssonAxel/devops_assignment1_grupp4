@@ -9,7 +9,7 @@ polars==1.44.1
 polars-runtime-32==1.44.1
 Pygments==2.21.0
 pytest==9.1.1
-python-dotenv==1.0.1
+python-dotenv==1.2.2
 requests==2.34.2
 ruff==0.16.4
 urllib3==2.7.0
