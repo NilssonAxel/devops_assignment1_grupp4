@@ -5,6 +5,8 @@ They test our own logic: the pagination loop, the auth header, and the
 guards that stop a bad response from landing as if it were good.
 """
 
+import types
+
 import pytest
 import requests
 
@@ -24,6 +26,16 @@ class FakeResponse:
     def raise_for_status(self):
         if self.status_code >= 400:
             raise requests.HTTPError(f"{self.status_code} error")
+
+
+def _patch_get(monkeypatch, fake_get):
+    """Routes the session's get through the stub.
+
+    Patches the factory we own rather than reaching into requests, so the
+    test does not depend on how the session is built.
+    """
+    session = types.SimpleNamespace(get=fake_get)
+    monkeypatch.setattr(staging, "_session", lambda: session)
 
 
 def _page(objects, more, total=None):
@@ -46,9 +58,8 @@ def test_missing_api_key_raises(monkeypatch):
 
 
 def test_single_page_returns_records(monkeypatch):
-    monkeypatch.setattr(
-        staging.requests,
-        "get",
+    _patch_get(
+        monkeypatch,
         lambda *a, **k: FakeResponse(_page([{"n": 1}, {"n": 2}], more=False, total=2)),
     )
     assert staging.fetch_countries() == [{"n": 1}, {"n": 2}]
@@ -66,7 +77,7 @@ def test_pagination_collects_every_page(monkeypatch):
         seen_offsets.append(params["offset"])
         return FakeResponse(pages[len(seen_offsets) - 1])
 
-    monkeypatch.setattr(staging.requests, "get", fake_get)
+    _patch_get(monkeypatch, fake_get)
     assert len(staging.fetch_countries()) == 254
     assert seen_offsets == [0, 100, 200], "offset must advance by the page size"
 
@@ -79,24 +90,21 @@ def test_sends_bearer_token(monkeypatch):
         captured.update(headers)
         return FakeResponse(_page([{"n": 1}], more=False))
 
-    monkeypatch.setattr(staging.requests, "get", fake_get)
+    _patch_get(monkeypatch, fake_get)
     staging.fetch_countries()
     assert captured["Authorization"] == "Bearer secret-123"
 
 
 def test_http_error_propagates(monkeypatch):
-    monkeypatch.setattr(
-        staging.requests, "get", lambda *a, **k: FakeResponse({}, status=401)
-    )
+    _patch_get(monkeypatch, lambda *a, **k: FakeResponse({}, status=401))
     with pytest.raises(requests.HTTPError):
         staging.fetch_countries()
 
 
 def test_error_envelope_with_http_200_is_rejected(monkeypatch):
     """The deprecated-endpoint case: HTTP 200 but the body carries no data."""
-    monkeypatch.setattr(
-        staging.requests,
-        "get",
+    _patch_get(
+        monkeypatch,
         lambda *a, **k: FakeResponse(
             {"success": False, "data": None, "errors": [{"message": "deprecated"}]}
         ),
@@ -107,18 +115,15 @@ def test_error_envelope_with_http_200_is_rejected(monkeypatch):
 
 def test_zero_records_is_rejected(monkeypatch):
     """An empty result would otherwise surface as an empty Gold table."""
-    monkeypatch.setattr(
-        staging.requests, "get", lambda *a, **k: FakeResponse(_page([], more=False))
-    )
+    _patch_get(monkeypatch, lambda *a, **k: FakeResponse(_page([], more=False)))
     with pytest.raises(RuntimeError, match="zero records"):
         staging.fetch_countries()
 
 
 def test_truncated_fetch_is_rejected(monkeypatch):
     """The API says it holds 254; stopping at 2 must not pass as complete."""
-    monkeypatch.setattr(
-        staging.requests,
-        "get",
+    _patch_get(
+        monkeypatch,
         lambda *a, **k: FakeResponse(
             _page([{"n": 1}, {"n": 2}], more=False, total=254)
         ),
@@ -137,7 +142,7 @@ def test_runaway_pagination_stops(monkeypatch):
         calls.append(1)
         return FakeResponse(_page([{"n": 1}], more=True))
 
-    monkeypatch.setattr(staging.requests, "get", fake_get)
+    _patch_get(monkeypatch, fake_get)
     with pytest.raises(RuntimeError, match="Stopped after"):
         staging.fetch_countries()
     assert len(calls) == staging.MAX_PAGES
@@ -145,9 +150,8 @@ def test_runaway_pagination_stops(monkeypatch):
 
 def test_missing_total_in_meta_is_tolerated(monkeypatch):
     """The completeness check only applies when the API reports a total."""
-    monkeypatch.setattr(
-        staging.requests,
-        "get",
+    _patch_get(
+        monkeypatch,
         lambda *a, **k: FakeResponse(_page([{"n": 1}], more=False)),
     )
     assert staging.fetch_countries() == [{"n": 1}]

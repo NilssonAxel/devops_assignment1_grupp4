@@ -1,11 +1,14 @@
 """Smoke test for the full pipeline: staging -> bronze -> silver -> gold.
 
-The network is stubbed the same way test_staging.py does, so this needs
-no API key and no connectivity. It runs the real land_raw, latest_batch,
+The network is stubbed the same way test_staging.py does, patching the
+session factory rather than requests itself, so this needs no API key
+and no connectivity. It runs the real land_raw, latest_batch,
 transform_all, and summarize functions against tmp_path, proving the
 four stages fit together end to end rather than testing any one in
 isolation.
 """
+
+import types
 
 import polars as pl
 
@@ -49,18 +52,17 @@ class FakeResponse:
 
 def test_smoke_pipeline_runs_end_to_end(monkeypatch, tmp_path):
     monkeypatch.setattr(staging, "API_KEY", "test-key")
-    monkeypatch.setattr(
-        staging.requests,
-        "get",
-        lambda *a, **k: FakeResponse(
+    session = types.SimpleNamespace(
+        get=lambda *a, **k: FakeResponse(
             {
                 "data": {
                     "objects": SAMPLE_COUNTRIES,
                     "meta": {"more": False, "total": len(SAMPLE_COUNTRIES)},
                 }
             }
-        ),
+        )
     )
+    monkeypatch.setattr(staging, "_session", lambda: session)
 
     raw = staging.fetch_countries()
     bronze_table = tmp_path / "countries_bronze.parquet"
