@@ -1,0 +1,47 @@
+# Runs the pipeline against the live source on a schedule.
+# CI only runs the tests, so nothing else catches a source that has
+# changed shape or gone away.
+name: pipeline
+
+on:
+  schedule:
+    # Offset from the hour: scheduled jobs on the hour are heavily
+    # contended and start late.
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.13"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run the pipeline
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+        run: python -m src.pipeline
+      - name: Upload the tables
+        # Always: a run that fails partway still leaves Bronze behind,
+        # and that is what you want to look at when diagnosing it.
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: pipeline-output
+          path: data/
+          if-no-files-found: warn
+          retention-days: 7
