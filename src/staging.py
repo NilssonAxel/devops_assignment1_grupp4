@@ -2,6 +2,8 @@ import os
 
 import requests
 from dotenv import load_dotenv
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 load_dotenv()
 
@@ -10,6 +12,30 @@ API_KEY = os.getenv("API_KEY")
 
 PAGE_SIZE = 100
 MAX_PAGES = 100
+RETRY_ATTEMPTS = 4
+BACKOFF_FACTOR = 0.5
+
+
+def _session():
+    """A session that retries transient failures.
+
+    The source drops connections intermittently: one measurement caught
+    four successes in six requests, and a full fetch needs three pages,
+    so an unattended run fails more often than it succeeds without this.
+    Only GET is retried, and only on connection errors, read errors and
+    the status codes that mean "try again".
+    """
+    retry = Retry(
+        total=RETRY_ATTEMPTS,
+        connect=RETRY_ATTEMPTS,
+        read=RETRY_ATTEMPTS,
+        backoff_factor=BACKOFF_FACTOR,
+        status_forcelist=(429, 500, 502, 503, 504),
+        allowed_methods=frozenset(["GET"]),
+    )
+    session = requests.Session()
+    session.mount("https://", HTTPAdapter(max_retries=retry))
+    return session
 
 
 def fetch_countries():
@@ -28,12 +54,13 @@ def fetch_countries():
             "API_KEY is missing — copy .env.example to .env and fill it in"
         )
     headers = {"Authorization": f"Bearer {API_KEY}"}
+    session = _session()
     countries = []
     offset = 0
     reported_total = None
 
     for _ in range(MAX_PAGES):
-        response = requests.get(
+        response = session.get(
             API_BASE_URL,
             headers=headers,
             params={"limit": PAGE_SIZE, "offset": offset},
