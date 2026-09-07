@@ -45,10 +45,7 @@ def _metric_values(gold_data, metric):
     """Return category and value pairs for one Gold metric."""
     rows = gold_data.filter(pl.col("metric") == metric)
 
-    return {
-        row["category"]: row["value"]
-        for row in rows.iter_rows(named=True)
-    }
+    return {row["category"]: row["value"] for row in rows.iter_rows(named=True)}
 
 
 def test_summarize_writes_parquet_and_returns_path(silver_data, tmp_path):
@@ -64,9 +61,7 @@ def test_summarize_calculates_totals(silver_data, tmp_path):
     _, gold_data = _run_and_read(silver_data, tmp_path)
 
     assert _metric_values(gold_data, "total_countries") == {"all": 3}
-    assert _metric_values(gold_data, "total_population") == {
-        "all": 280_500_000
-    }
+    assert _metric_values(gold_data, "total_population") == {"all": 280_500_000}
 
 
 def test_summarize_counts_countries_by_region(silver_data, tmp_path):
