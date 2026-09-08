@@ -7,14 +7,17 @@ How we work in this repo. Read this before your first pull request. It's short o
 - Python 3.13
 - Install the dev tools:
 ```bash
-  pip install ruff pytest
-  pip install -r requirements.txt   # if present
+  pip install -r dev-requirements.txt
 ```
+- Install the pre-commit hooks, so lint/format/secret-scan run automatically on `git commit`:
+```bash
+  pre-commit install
+```
+  This also needs `trufflehog` on your `PATH` (it's a standalone binary, not a Python package) — e.g. `scoop install trufflehog` on Windows, `brew install trufflehog` on macOS. Open a new terminal afterwards: installers update PATH for new shells only, so a terminal that was already open won't pick it up, and the hook will fail with a confusing "not found" error instead of a clean skip.
 - Run the same checks CI runs, before you push:
 ```bash
-  ruff check .          # lint
-  ruff format --check . # formatting
-  pytest                # once the repo has tests
+  pre-commit run --all-files   # everything the hooks cover
+  pytest                       # once the repo has tests
 ```
   Ruff covers linting *and* formatting (it replaces flake8, black, and isort). If `ruff format --check` fails, run `ruff format .` to fix it.
  
