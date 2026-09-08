@@ -14,9 +14,8 @@ How we work in this repo. Read this before your first pull request. It's short o
   pre-commit install
 ```
   This also needs `trufflehog` on your `PATH` (it's a standalone binary, not a Python package) — e.g. `scoop install trufflehog` on Windows, `brew install trufflehog` on macOS. Open a new terminal afterwards: installers update PATH for new shells only, so a terminal that was already open won't pick it up, and the hook will fail with a confusing "not found" error instead of a clean skip.
-- Run the same checks CI runs, before you push:
+- Run the pytest before you push, it isn't covered in the pre-commit hook:
 ```bash
-  pre-commit run --all-files   # everything the hooks cover
   pytest                       # once the repo has tests
 ```
   Ruff covers linting *and* formatting (it replaces flake8, black, and isort). If `ruff format --check` fails, run `ruff format .` to fix it.
