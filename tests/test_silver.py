@@ -126,3 +126,41 @@ def test_empty_input_returns_empty_dataframe():
         "ingested_at",
         "source_system",
     ]
+
+
+def test_metadata_is_preserved():
+    record = {
+        "names": {"common": "Sweden"},
+        "codes": {"ccn3": "752"},
+        "capitals": [{"name": "Stockholm"}],
+        "population": 10_500_000,
+        "region": "Europe",
+        "continents": ["Europe"],
+        "currencies": [{"code": "SEK"}],
+    }
+
+    bronze = _bronze_rows([record])
+    result = transform_all(bronze)
+
+    assert result["ingested_at"][0] == bronze["ingested_at"][0]
+    assert result["source_system"][0] == bronze["source_system"][0]
+
+
+def test_null_currency_codes_are_removed():
+    record = {
+        "names": {"common": "Testland"},
+        "codes": {"ccn3": "123"},
+        "capitals": [{"name": "Test City"}],
+        "population": 1000,
+        "region": "Europe",
+        "continents": ["Europe"],
+        "currencies": [
+            {"code": "EUR"},
+            {"code": None},
+            {"code": "USD"},
+        ],
+    }
+
+    result = transform_all(_bronze_rows([record]))
+
+    assert result["currencies"].to_list()[0] == ["EUR", "USD"]
