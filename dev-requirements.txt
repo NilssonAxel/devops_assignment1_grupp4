@@ -1,5 +1,0 @@
--r requirements.txt
-
-pre-commit
-pytest
-ruff==0.16.4

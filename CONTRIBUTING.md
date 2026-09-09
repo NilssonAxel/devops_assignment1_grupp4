@@ -7,7 +7,7 @@ How we work in this repo. Read this before your first pull request. It's short o
 - Python 3.13
 - Install the dev tools:
 ```bash
-  pip install -r dev-requirements.txt
+  pip install -r requirements-dev.txt
 ```
 - Install the pre-commit hooks, so lint/format/secret-scan run automatically on `git commit`:
 ```bash
