@@ -1,4 +1,4 @@
-"""Smoke test for the full pipeline: staging -> bronze -> silver -> gold.
+"""Integration test for the full pipeline: staging -> bronze -> silver -> gold.
 
 The network is stubbed the same way test_staging.py does, patching the
 session factory rather than requests itself, so this needs no API key
@@ -50,7 +50,7 @@ class FakeResponse:
         pass
 
 
-def test_smoke_pipeline_runs_end_to_end(monkeypatch, tmp_path):
+def test_pipeline_runs_end_to_end(monkeypatch, tmp_path):
     monkeypatch.setattr(staging, "API_KEY", "test-key")
     session = types.SimpleNamespace(
         get=lambda *a, **k: FakeResponse(
