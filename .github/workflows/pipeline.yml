@@ -1,6 +1,6 @@
 # Runs the pipeline against the live source on a schedule.
-# CI only runs the tests, so nothing else catches a source that has
-# changed shape or gone away.
+# CI only runs the tests against stubbed data, so the smoke check below
+# is what catches a source that has changed shape or gone away.
 name: pipeline
 
 on:
@@ -35,6 +35,8 @@ jobs:
         env:
           API_KEY: ${{ secrets.API_KEY }}
         run: python -m src.pipeline
+      - name: Smoke check the Gold output
+        run: python -m scripts.smoke_check
       - name: Upload the tables
         # Always: a run that fails partway still leaves Bronze behind,
         # and that is what you want to look at when diagnosing it.

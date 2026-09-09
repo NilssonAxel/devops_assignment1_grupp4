@@ -56,7 +56,8 @@ Silver data is transformed in memory and passed directly to Gold.
 |   |-- silver.py        # Cleaning and typed transformations
 |   |-- gold.py          # Aggregations and Gold output
 |   `-- pipeline.py      # End-to-end orchestration
-|-- tests/               # Unit tests and end-to-end smoke test
+|-- tests/               # Unit tests and end-to-end integration test
+|-- scripts/             # Post-deploy smoke check for the scheduled pipeline
 |-- .env.example         # Environment variable template
 |-- requirements.txt     # Runtime dependencies
 |-- requirements-dev.txt # Development and quality tools
@@ -148,9 +149,9 @@ Run the complete test suite:
 python -m pytest
 ```
 
-The suite contains unit tests for the individual pipeline stages and a smoke test
-that runs the full `staging -> bronze -> silver -> gold` chain without contacting
-the live API.
+The suite contains unit tests for the individual pipeline stages and an integration
+test that runs the full `staging -> bronze -> silver -> gold` chain without
+contacting the live API.
 
 Run the same linting and formatting checks used by CI:
 
@@ -186,10 +187,19 @@ The `pipeline` workflow runs every day at **06:17 UTC** and can also be started
 manually from the GitHub Actions tab. It executes the live pipeline using the
 repository's `API_KEY` secret.
 
-Each run uploads the generated `data/` directory as an artifact named
+After the pipeline runs, `scripts/smoke_check.py` checks the real
+`data/gold_summary.parquet` it produced: that the file exists, has rows, has the
+expected columns, and reports a positive country count. This is separate from
+`tests/test_integration.py` — it runs against the live output of a real
+deployment rather than stubbed data, and only checks that the result looks
+plausible rather than asserting exact values. The check fails the workflow run
+if it fails, so a source that has changed shape or gone away is caught here
+rather than going unnoticed in a merged artifact.
+
+Each run then uploads the generated `data/` directory as an artifact named
 `pipeline-output`. Artifacts are retained for seven days. Uploading uses an
 `always()` condition so that any available intermediate output, such as Bronze data,
-is preserved even when a later stage fails.
+is preserved even when a stage or the smoke check fails.
 
 ## Development note: resolved merge conflict
 
