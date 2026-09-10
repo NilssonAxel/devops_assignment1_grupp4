@@ -16,3 +16,4 @@ def run_pipeline():
 if __name__ == "__main__":
     output_path = run_pipeline()
     print(f"Gold data written to: {output_path}")
+    print("Done!")
